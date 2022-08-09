@@ -5,12 +5,12 @@ We setup a hyperledgr fabric blockchain baseline environment which can be used f
 ## Prerequisites
 - Advanced Operating Systems (Distributed Systems) - Graduate level 
   - Ordering
-- - BFT
-- - Raft
+  - BFT
+  - Raft
 - Computer Security
-- - Hash
-- - Cryptography
-- - Public Key Infrastructure (PKI)
+  - Hash
+  - Cryptography
+  - Public Key Infrastructure (PKI)
 - Key Concepts in [Hyperledger-Fabric Offical website](https://hyperledger-fabric.readthedocs.io/en/latest/key_concepts.html)
 
 Note:
