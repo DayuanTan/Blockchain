@@ -4,7 +4,7 @@ We setup a hyperledgr fabric blockchain baseline environment which can be used f
 
 ## Prerequisites
 - Advanced Operating Systems (Distributed Systems) - Graduate level 
-- - Ordering
+  - Ordering
 - - BFT
 - - Raft
 - Computer Security
