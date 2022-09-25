@@ -2,7 +2,7 @@
 
 We setup a hyperledgr fabric blockchain baseline environment which can be used for future projects built on it.
 
-## Prerequisites
+## 0. Prerequisites
 - Advanced Operating Systems (Distributed Systems) - Graduate level 
   - Ordering, Gossip, BFT, Raft
 - Computer Security
@@ -17,7 +17,7 @@ We setup a hyperledgr fabric blockchain baseline environment which can be used f
 
 
   
-## Installation
+## 1. Installation
 
 0. Check prerequisites
 
@@ -55,21 +55,38 @@ This will  download a directory named ```fabric-samples```.
 
 Now that you have downloaded Fabric and the samples, you can start running Fabric.
 
-## Using the Fabric test network: 
+## 2. Using the Fabric test network: 
 
-https://hyperledger-fabric.readthedocs.io/en/latest/test_network.html
+Reference: https://hyperledger-fabric.readthedocs.io/en/latest/test_network.html
 
 
 
-## Run
+### 2.1 Run the example (Fabric test network)
 
 Then you can run  the example. 
 
+```Don't modify this example. Once modify, it doesn't work. Later you create your own network.```
+
 You can find the scripts to bring up the network in the test-network directory of the fabric-samples repository. Navigate to the test network directory by using the following command:
 ```
-cd fabric-samples/test-network 
+Start your docker. If you use "Docker Desktop" just click its icon. 
 
-./network.sh down
+cd fabric-samples/test-network # continue use same directory as above
 
-./network.sh up
+./network.sh down # to make sure everything is down
+
+It will print below or similar:
+Kill one or more running containers
+
+At this moment, check your containers in Docker Desktop, or check using "docker ps", you should see no related containers running.
+
+./network.sh up # start up you network
+
+At this moment, check your containers in Docker Desktop, or check using "docker ps", you should see 4 containers running.
 ```
+
+Screenshot for 4 containers running:
+
+![](img/example_network1.png)
+
+![](img/example_network.png)

@@ -21,6 +21,8 @@
 
     ```$ docker build -t getting-started .``` (must have Dockerfile created.) This command used the Dockerfile to build a new container image.
 
+![](img/docker-comp-img-cont.png)
+
 - Run an App Container
   
     Now that we have an image, let's run the application! To do so, we will use the docker run command.
