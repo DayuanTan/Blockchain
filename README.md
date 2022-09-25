@@ -91,3 +91,136 @@ Screenshot for 4 containers running:
 ![](img/example_network1.png)
 
 ![](img/example_network.png)
+
+### 2.2 Create a channel
+
+To create a channel between Org1 and Org2 and join their peers to the channel
+```
+./network.sh createChannel -c dayuanchannel
+```
+It will print "Channel 'dayuanchannel' created:
+
+
+![](img/example_structure1.png)
+
+
+### 2.3 Starting a chaincode on the channel
+
+After you have created a channel, you can start using smart contracts to interact with the channel ledger.
+
+In Fabric, **smart contracts** are deployed on the network in packages referred to as **chaincode**. A Chaincode is **installed** on the peers of an organization and then deployed to a channel, where it can then be used to endorse transactions and interact with the blockchain ledger. Before a chaincode can be **deployed** to a channel, the members of the channel need to **agree on a chaincode definition** that establishes chaincode governance. When the required number of organizations agree, the chaincode definition can be committed to the channel, and the chaincode is ready to be used.
+
+To start a chaincode on the channel using the following command:
+
+```c
+./network.sh deployCC -ccn basic -c dayuanchannel -ccp ../asset-transfer-basic/chaincode-go -ccl go
+
+
+// -c <channel name> - Name of channel to deploy chaincode to
+// -ccn <name> - Chaincode name.
+// -ccl <language> - Programming language of the chaincode to deploy: go, java, javascript, typescript
+// -ccp <path>  - File path to the chaincode.
+// -ccep <policy>  - (Optional) Chaincode endorsement policy using signature policy syntax. The default policy requires an endorsement from Org1 and Org2
+// -cccg <collection-config>  - (Optional) File path to private data collections configuration file
+```
+
+It will print below following steps we mentioned in above paragraph:
+```
+Chaincode is packaged
+Chaincode is installed on peer0.org1
+Chaincode is installed on peer0.org2
+Query installed successful on peer0.org1 on channel
+Chaincode definition approved on peer0.org1 on channel 'dayuanchannel'
+Chaincode definition approved on peer0.org2 on channel 'dayuanchannel'
+Chaincode definition committed on channel 'dayuanchannel'
+Query chaincode definition successful on peer0.org1 on channel 'dayuanchannel'
+Query chaincode definition successful on peer0.org2 on channel 'dayuanchannel'
+```
+
+### 2.4 Interacting with the network
+
+Use the following command to add those binaries to your CLI (Command line interface) Path:
+
+```c
+export PATH=${PWD}/../bin:$PATH // need to do this every time after clossing current CLI
+```
+
+
+You also need to set the FABRIC_CFG_PATH to point to the core.yaml file in the fabric-samples repository: 
+```c 
+export FABRIC_CFG_PATH=$PWD/../config/ // need to do this every time after clossing current CLI
+```
+
+Then set the environment variables that allow you to operate the peer CLI as Org1: Execute below commands one by one:
+
+```
+export CORE_PEER_TLS_ENABLED=true
+```
+```
+export CORE_PEER_LOCALMSPID="Org1MSP"
+```
+```
+export CORE_PEER_TLS_ROOTCERT_FILE=${PWD}/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt
+```
+CORE_PEER_TLS_ROOTCERT_FILE and CORE_PEER_MSPCONFIGPATH environment variables point to the Org1 crypto material in the organizations folder.
+```
+export CORE_PEER_MSPCONFIGPATH=${PWD}/organizations/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp
+```
+```
+export CORE_PEER_ADDRESS=localhost:7051
+```
+
+Then to initialize the ledger with assets. (Note the CLI does not access the Fabric Gateway peer, so each endorsing peer must be specified.)
+```
+peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile "${PWD}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem" -C dayuanchannel -n basic --peerAddresses localhost:7051 --tlsRootCertFiles "${PWD}/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt" --peerAddresses localhost:9051 --tlsRootCertFiles "${PWD}/organizations/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/tls/ca.crt" -c '{"function":"InitLedger","Args":[]}'
+```
+
+If success it will print "INFO [chaincodeCmd] chaincodeInvokeOrQuery -> Chaincode invoke successful. result: status:200"
+
+ou can now query the ledger from your CLI. Run the following command to get the list of assets that were added to your channel ledger:
+```
+peer chaincode query -C dayuanchannel -n basic -c '{"Args":["GetAllAssets"]}'
+```
+
+It prints:
+```json
+[
+  {
+    "AppraisedValue":300,
+    "Color":"blue",
+    "ID":"asset1",
+    "Owner":"Tomoko",
+    "Size":5
+  },{
+    "AppraisedValue":400,
+    "Color":"red",
+    "ID":"asset2",
+    "Owner":"Brad",
+    "Size":5
+  },{
+    "AppraisedValue":500,
+    "Color":"green",
+    "ID":"asset3",
+    "Owner":"Jin Soo",
+    "Size":10
+  },{
+    "AppraisedValue":600,
+    "Color":"yellow",
+    "ID":"asset4",
+    "Owner":"Max",
+    "Size":10
+  },{
+    "AppraisedValue":700,
+    "Color":"black",
+    "ID":"asset5",
+    "Owner":"Adriana",
+    "Size":15
+  },{
+    "AppraisedValue":800,
+    "Color":"white",
+    "ID":"asset6",
+    "Owner":"Michel",
+    "Size":15
+  }
+]
+```
