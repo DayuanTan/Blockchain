@@ -1,5 +1,5 @@
 
-# [Docker]
+# Docker
 
 - Official tutorial:
     - https://docs.docker.com/get-started/
@@ -30,8 +30,15 @@
     ```docker run -dp 3000:3000 getting-started```
 
 - Stop and remove a container
-    - docker ps
-    - docker stop <the-container-id>
-    - docker rm <the-container-id> 
+    - ```docker ps```
+    - ```docker stop <the-container-id>```
+    - ```docker rm <the-container-id>```
     - every time we make a change in  our code we need to rebuild and start a new container (later will do persistence to avoid this)
 
+- Container Volumes (to persist the data)
+   - each container starts from the image definition each time it starts. While containers can create, update, and delete files, those changes are lost when the container is removed and all changes are isolated to that container. With volumes, we can change all of this.
+  - Volumes provide the ability to connect specific filesystem paths of the container back to the host machine. If a directory in the container is mounted, changes in that directory are also seen on the host machine. If we mount that same directory across container restarts, we'd see the same files.
+  - two main types of volumes: ()
+    - named volume, 
+    - bind mounts
+- More about named volume, bind mounts, share to hub, multiple containers, docker compose go to https://docs.docker.com/get-started/ or http://localhost/tutorial/ after run locally
