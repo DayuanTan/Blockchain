@@ -26,7 +26,7 @@ https://hyperledger-fabric.readthedocs.io/en/latest/prereqs.html
 
 1. Create a folder for Go. 
 
-```
+```linux
 mkdir -p $HOME/go/src/github.com/<your_github_userid>
 
 cd $HOME/go/src/github.com/<your_github_userid>
@@ -35,7 +35,7 @@ This is a Golang Community recommendation for Go projects.
 
 2. To get the install script:
 
-```
+```linux
 curl -sSLO https://raw.githubusercontent.com/hyperledger/fabric/main/scripts/install-fabric.sh && chmod +x install-fabric.sh
 ```
 
@@ -43,7 +43,7 @@ This will download ```install-fabric.sh``` into the directory ```$HOME/go/src/gi
 
 
 3. Pull the Docker containers and clone the samples repo
-```
+```linux
 ./install-fabric.sh docker samples binary 
 
 or 
@@ -68,7 +68,8 @@ Then you can run  the example.
 ```Don't modify this example. Once modify, it doesn't work. Later you create your own network.```
 
 You can find the scripts to bring up the network in the test-network directory of the fabric-samples repository. Navigate to the test network directory by using the following command:
-```
+
+```linux
 Start your docker. If you use "Docker Desktop" just click its icon. 
 
 cd fabric-samples/test-network # continue use same directory as above
