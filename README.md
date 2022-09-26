@@ -124,7 +124,7 @@ To start a chaincode on the channel using the following command:
 // -cccg <collection-config>  - (Optional) File path to private data collections configuration file
 ```
 
-It will print below following steps we mentioned in above paragraph:
+It will print below following steps we mentioned in above paragraph, and those printed log reflects the so called "[chaincode life cycle](https://hyperledger-fabric.readthedocs.io/en/latest/chaincode_lifecycle.html)":
 ```
 Chaincode is packaged
 Chaincode is installed on peer0.org1
@@ -137,7 +137,11 @@ Query chaincode definition successful on peer0.org1 on channel 'dayuanchannel'
 Query chaincode definition successful on peer0.org2 on channel 'dayuanchannel'
 ```
 
+![](img/example_structure3.png)
+
 ### 2.4 Interacting with the network
+
+### 2.4.1 Set the environment variables
 
 Use the following command to add those binaries to your CLI (Command line interface) Path:
 
@@ -169,6 +173,8 @@ export CORE_PEER_MSPCONFIGPATH=${PWD}/organizations/peerOrganizations/org1.examp
 ```
 export CORE_PEER_ADDRESS=localhost:7051
 ```
+
+### 2.4.2 Initialize the ledger with assets
 
 Then to initialize the ledger with assets. (Note the CLI does not access the Fabric Gateway peer, so each endorsing peer must be specified.)
 ```
@@ -223,4 +229,93 @@ It prints:
     "Size":15
   }
 ]
+```
+
+
+### 2.4.3 Change the owner of an asset on the ledger by invoking the asset-transfer (basic) chaincode
+
+Chaincodes are invoked when a network member wants to transfer or change an asset on the ledger. Use the following command to change the owner of an asset on the ledger by invoking the asset-transfer (basic) chaincode:
+
+We use below command to transfer "asset6" changing its owner from "Michel" to "Christopher":
+
+```c
+peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile "${PWD}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem" -C dayuanchannel -n basic --peerAddresses localhost:7051 --tlsRootCertFiles "${PWD}/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt" --peerAddresses localhost:9051 --tlsRootCertFiles "${PWD}/organizations/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/tls/ca.crt" -c '{"function":"TransferAsset","Args":["asset6","Christopher"]}'
+```
+
+
+If the command is successful, you should see the following response:
+```
+INFO [chaincodeCmd] chaincodeInvokeOrQuery -> Chaincode invoke successful. result: status:200 payload:"Michel"
+```
+
+We can check the ledge again to see what has been changed:
+
+```c
+peer chaincode query -C dayuanchannel -n basic -c '{"Args":["GetAllAssets"]}' // same command we used before
+```
+
+It prints:
+```json
+[
+  {
+    "AppraisedValue":300,
+    "Color":"blue",
+    "ID":"asset1",
+    "Owner":"Tomoko",
+    "Size":5
+  },{
+    "AppraisedValue":400,
+    "Color":"red",
+    "ID":"asset2",
+    "Owner":"Brad",
+    "Size":5
+  },{
+    "AppraisedValue":500,
+    "Color":"green",
+    "ID":"asset3",
+    "Owner":"Jin Soo",
+    "Size":10
+  },{
+    "AppraisedValue":600,
+    "Color":"yellow",
+    "ID":"asset4",
+    "Owner":"Max",
+    "Size":10
+  },{
+    "AppraisedValue":700,
+    "Color":"black",
+    "ID":"asset5",
+    "Owner":"Adriana",
+    "Size":15
+  },{
+    "AppraisedValue":800,
+    "Color":"white",
+    "ID":"asset6",
+    "Owner":"Christopher",// Only difference than before. It was "Michel" here.
+    "Size":15
+  }
+]
+```
+
+### Check the change in ledge from Org2 peer
+
+we can use another query to see how the invoke changed the assets on the blockchain ledger. Since we already queried the Org1 peer, we can take this opportunity to query the chaincode running on the Org2 peer. Set the following environment variables to operate as Org2:
+
+#### Environment variables for Org2
+
+```c
+export CORE_PEER_TLS_ENABLED=true
+export CORE_PEER_LOCALMSPID="Org2MSP"
+export CORE_PEER_TLS_ROOTCERT_FILE=${PWD}/organizations/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/tls/ca.crt
+export CORE_PEER_MSPCONFIGPATH=${PWD}/organizations/peerOrganizations/org2.example.com/users/Admin@org2.example.com/msp
+export CORE_PEER_ADDRESS=localhost:9051
+```
+
+You can now query the asset-transfer (basic) chaincode running on peer0.org2.example.com:
+```
+peer chaincode query -C dayuanchannel -n basic -c '{"Args":["ReadAsset","asset6"]}'
+```
+The result will show that "asset6" was transferred to Christopher:
+```
+{"AppraisedValue":800,"Color":"white","ID":"asset6","Owner":"Christopher","Size":15}
 ```
