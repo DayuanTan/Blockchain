@@ -21,6 +21,13 @@ We setup a hyperledgr fabric blockchain baseline environment which can be used f
       - [Install the chaincode on the Org1 peer first](#install-the-chaincode-on-the-org1-peer-first)
       - [Install the chaincode on the Org2 peer secondly](#install-the-chaincode-on-the-org2-peer-secondly)
     - [2.5.4 Approve a chaincode definition](#254-approve-a-chaincode-definition)
+      - [Org2 approve it](#org2-approve-it)
+      - [Org1 approve it](#org1-approve-it)
+    - [2.5.5 Committing the chaincode definition to the channel](#255-committing-the-chaincode-definition-to-the-channel)
+    - [2.5.6 Invoking the chaincode](#256-invoking-the-chaincode)
+    - [2.5.7 Upgrading a smart contract](#257-upgrading-a-smart-contract)
+    - [2.5.8 Clean up (This can be the very last step, not here)](#258-clean-up-this-can-be-the-very-last-step-not-here)
+  - [2.6 Running a Fabric Application](#26-running-a-fabric-application)
 
   
 ## 1. Installation
@@ -454,4 +461,141 @@ The chaincode is built by the peer when the chaincode is installed.
 
 We need to approve a chaincode definition for your organization. The definition includes the important parameters of chaincode governance such as the name, version, and the chaincode endorsement policy.
 
+
 By default, this policy requires that a majority of channel members need to approve a chaincode before it can be used on a channel. 
+
+
+If an organization has installed the chaincode on their peer, they need to include the packageID in the chaincode definition approved by their organization.
+
+To check installed package ID:
+```c
+ $ peer lifecycle chaincode queryinstalled // check  package ID 
+Installed chaincodes on peer:
+Package ID: basic_1.0:2e20ce421c8037420718c8a3918a1eea76343b7361fffdac454181c54e5736c7, Label: basic_1.0 // the installed package in example
+Package ID: basic_2.0_dy:2561966ca4069c747b6bcafd1546bd468c9c2894e6b24c34ba15661da942d3e2, Label: basic_2.0_dy // the installed package I changed (only changed label)
+```
+
+We are going to use the package ID when we approve the chaincode, so let’s go ahead and save it as an environment variable. 
+```
+export CC_PACKAGE_ID=basic_2.0_dy:2561966ca4069c747b6bcafd1546bd468c9c2894e6b24c34ba15661da942d3e2
+```
+
+#### Org2 approve it
+Currently the  environment variables have been set to operate the peer CLI as the Org2 admin, so we let org2 apprvoe the installed chaincode package firstly:
+```
+$ peer lifecycle chaincode approveformyorg -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --channelID dayuanchannel --name basic --version 2.0 --package-id $CC_PACKAGE_ID --sequence 2 --tls --cafile "${PWD}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem"
+
+INFO [chaincodeCmd] ClientWait -> txid [b2dcf685930b7d8d9b40e225056dccd2c0f78c48b563f1bc260bd6f91ec98bc4] committed with status (VALID) at localhost:9051
+```
+
+
+#### Org1 approve it
+
+```
+$ export CORE_PEER_LOCALMSPID="Org1MSP"
+export CORE_PEER_MSPCONFIGPATH=${PWD}/organizations/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp
+export CORE_PEER_TLS_ROOTCERT_FILE=${PWD}/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt
+export CORE_PEER_ADDRESS=localhost:7051
+
+
+$ peer lifecycle chaincode approveformyorg -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --channelID dayuanchannel --name basic --version 2.0 --package-id $CC_PACKAGE_ID --sequence 2 --tls --cafile "${PWD}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem"
+
+INFO [chaincodeCmd] ClientWait -> txid [dc058c95f4cdd31799735fda709aad8efcb5c794d0dd15e10a56b1cf338aa764] committed with status (VALID) at localhost:7051
+```
+
+### 2.5.5 Committing the chaincode definition to the channel
+
+After a sufficient number of organizations have approved a chaincode definition, **one organization can commit** the chaincode definition to the channel. 
+
+To check whether channel members have approved the same chaincode definition:
+```
+$ peer lifecycle chaincode checkcommitreadiness --channelID dayuanchannel --name basic --version 2.0 --sequence 2 --tls --cafile "${PWD}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem" --output json
+
+{
+	"approvals": {
+		"Org1MSP": true,
+		"Org2MSP": true
+	}
+}
+```
+
+Since both organizations that are members of the channel have approved the same parameters, the chaincode definition is ready to be committed to the channel. 
+
+To commit the chaincode definition to the channel:
+```
+$ peer lifecycle chaincode commit -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --channelID dayuanchannel --name basic --version 2.0 --sequence 2 --tls --cafile "${PWD}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem" --peerAddresses localhost:7051 --tlsRootCertFiles "${PWD}/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt" --peerAddresses localhost:9051 --tlsRootCertFiles "${PWD}/organizations/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/tls/ca.crt"
+
+INFO [chaincodeCmd] ClientWait -> txid [38b46a9d36e88c7a85af218d8d67a03ef606e1bcacfec51a19c1bbddc703f1a2] committed with status (VALID) at localhost:9051
+INFO [chaincodeCmd] ClientWait -> txid [38b46a9d36e88c7a85af218d8d67a03ef606e1bcacfec51a19c1bbddc703f1a2] committed with status (VALID) at localhost:7051
+```
+
+
+The transaction above uses the --peerAddresses flag to target peer0.org1.example.com from Org1 and peer0.org2.example.com from Org2. The commit transaction is submitted to the peers joined to the channel to query the chaincode definition that was approved by the organization that operates the peer. The command needs to target the peers from a sufficient number of organizations to satisfy the policy for deploying a chaincode. Because the approval is distributed within each organization, you can target any peer that belongs to a channel member.
+
+To confirm that the chaincode definition has been committed to the channel:
+```
+$ peer lifecycle chaincode querycommitted --channelID dayuanchannel --name basic --cafile "${PWD}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem"
+
+
+Committed chaincode definition for chaincode 'basic' on channel 'dayuanchannel':
+Version: 2.0, Sequence: 2, Endorsement Plugin: escc, Validation Plugin: vscc, Approvals: [Org1MSP: true, Org2MSP: true]
+```
+
+### 2.5.6 Invoking the chaincode
+
+Before we do anything, check current ledger:
+```
+$ peer chaincode query -C dayuanchannel -n basic -c '{"Args":["GetAllAssets"]}'
+
+[
+  {"AppraisedValue":300,"Color":"blue","ID":"asset1","Owner":"Tomoko","Size":5},
+  {"AppraisedValue":400,"Color":"red","ID":"asset2","Owner":"Brad","Size":5},
+  {"AppraisedValue":500,"Color":"green","ID":"asset3","Owner":"Jin Soo","Size":10},
+  {"AppraisedValue":600,"Color":"yellow","ID":"asset4","Owner":"Max","Size":10},
+  {"AppraisedValue":700,"Color":"black","ID":"asset5","Owner":"Adriana","Size":15},
+  {"AppraisedValue":800,"Color":"white","ID":"asset6","Owner":"Christopher","Size":15}
+] // This is as same as we modified above.
+```
+
+The asset-transfer (basic) chaincode is now ready to be invoked by client applications. Note that the invoke command needs to target a sufficient number of peers to meet the chaincode endorsement policy.
+
+Use the following command to create an initial set of assets on the ledger: 
+
+```
+peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile "${PWD}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem" -C dayuanchannel -n basic --peerAddresses localhost:7051 --tlsRootCertFiles "${PWD}/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt" --peerAddresses localhost:9051 --tlsRootCertFiles "${PWD}/organizations/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/tls/ca.crt" -c '{"function":"InitLedger","Args":[]}'
+
+INFO [chaincodeCmd] chaincodeInvokeOrQuery -> Chaincode invoke successful. result: status:200
+```
+
+Check again, it has been reset to its inital values:
+```
+ $ peer chaincode query -C dayuanchannel -n basic -c '{"Args":["GetAllAssets"]}'
+
+[
+  {"AppraisedValue":300,"Color":"blue","ID":"asset1","Owner":"Tomoko","Size":5},
+  {"AppraisedValue":400,"Color":"red","ID":"asset2","Owner":"Brad","Size":5},
+  {"AppraisedValue":500,"Color":"green","ID":"asset3","Owner":"Jin Soo","Size":10},
+  {"AppraisedValue":600,"Color":"yellow","ID":"asset4","Owner":"Max","Size":10},
+  {"AppraisedValue":700,"Color":"black","ID":"asset5","Owner":"Adriana","Size":15},
+  {"AppraisedValue":800,"Color":"white","ID":"asset6","Owner":"Michel","Size":15}
+]
+```
+
+### 2.5.7 Upgrading a smart contract
+
+Different levels of upgrading need different operations. See https://hyperledger-fabric.readthedocs.io/en/latest/deploy_chaincode.html#upgrading-a-smart-contract
+
+### 2.5.8 Clean up (This can be the very last step, not here)
+
+When you are finished using the chaincode, you can also use the following commands to remove the Logspout tool.
+```
+docker stop logspout
+docker rm logspout
+```
+
+You can then bring down the test network by issuing the following command from the test-network directory:
+```
+./network.sh down
+```
+
+## 2.6 Running a Fabric Application
