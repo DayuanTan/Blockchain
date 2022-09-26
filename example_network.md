@@ -599,3 +599,218 @@ You can then bring down the test network by issuing the following command from t
 ```
 
 ## 2.6 Running a Fabric Application
+
+Currently we are in "fabric-samples/test-network".
+
+```
+cd  ../asset-transfer-basic/application-gateway-go
+```
+This directory contains a sample application developed using the Fabric Gateway client API for Node.
+The application  executes business logic that queries, creates additional assets, and modifies assets on the ledger by invoking transactions functions on the smart contract.
+
+(The original one (fabric-samples/asset-transfer-basic/application-gateway-go/assetTransfer.go) has bugs, replace it with my fixed one [assetTransfer.go](assetTransfer.go).)
+
+To run it:
+```c
+$ go run assetTransfer.go
+
+2022/09/26 02:18:43 ============ application-golang starts ============
+initLedger: // 1. initilize the ledger
+Submit Transaction: InitLedger, function creates the initial set of assets on the ledger
+*** Transaction committed successfully
+getAllAssets: // 2. query all after step 1
+Evaluate Transaction: GetAllAssets, function returns all the current assets on the ledger
+*** Result:[
+ {
+ "AppraisedValue": 300,
+ "Color": "blue",
+ "ID": "asset1",
+ "Owner": "Tomoko",
+ "Size": 5
+ },
+ {
+ "AppraisedValue": 1300,
+ "Color": "yellow",
+ "ID": "asset1664172691192",
+ "Owner": "Mark",
+ "Size": 5
+ },
+ {
+ "AppraisedValue": 400,
+ "Color": "red",
+ "ID": "asset2",
+ "Owner": "Brad",
+ "Size": 5
+ },
+ {
+ "AppraisedValue": 500,
+ "Color": "green",
+ "ID": "asset3",
+ "Owner": "Jin Soo",
+ "Size": 10
+ },
+ {
+ "AppraisedValue": 600,
+ "Color": "yellow",
+ "ID": "asset4",
+ "Owner": "Max",
+ "Size": 10
+ },
+ {
+ "AppraisedValue": 700,
+ "Color": "black",
+ "ID": "asset5",
+ "Owner": "Adriana",
+ "Size": 15
+ },
+ {
+ "AppraisedValue": 800,
+ "Color": "white",
+ "ID": "asset6",
+ "Owner": "Michel",
+ "Size": 15
+ }
+ ]
+createAsset: // 3. add a new asset ("yellow", "5", "Tom", "1300")
+Submit Transaction: CreateAsset, creates new asset with ID, Color, Size, Owner and AppraisedValue arguments
+*** Transaction committed successfully
+getAllAssets: // 4. check again 
+Evaluate Transaction: GetAllAssets, function returns all the current assets on the ledger
+*** Result:[
+ {
+ "AppraisedValue": 300,
+ "Color": "blue",
+ "ID": "asset1",
+ "Owner": "Tomoko",
+ "Size": 5
+ },
+ {
+ "AppraisedValue": 1300,
+ "Color": "yellow",
+ "ID": "asset1664172691192",
+ "Owner": "Mark",
+ "Size": 5
+ },
+ {
+ "AppraisedValue": 1300, // this is the new created one
+ "Color": "yellow",
+ "ID": "asset1664173123021",
+ "Owner": "Tom",
+ "Size": 5
+ },
+ {
+ "AppraisedValue": 400,
+ "Color": "red",
+ "ID": "asset2",
+ "Owner": "Brad",
+ "Size": 5
+ },
+ {
+ "AppraisedValue": 500,
+ "Color": "green",
+ "ID": "asset3",
+ "Owner": "Jin Soo",
+ "Size": 10
+ },
+ {
+ "AppraisedValue": 600,
+ "Color": "yellow",
+ "ID": "asset4",
+ "Owner": "Max",
+ "Size": 10
+ },
+ {
+ "AppraisedValue": 700,
+ "Color": "black",
+ "ID": "asset5",
+ "Owner": "Adriana",
+ "Size": 15
+ },
+ {
+ "AppraisedValue": 800,
+ "Color": "white",
+ "ID": "asset6",
+ "Owner": "Michel",
+ "Size": 15
+ }
+ ]
+readAssetByID: // 5. read by is 
+Evaluate Transaction: ReadAsset, function returns asset attributes
+*** Result:{
+ "AppraisedValue": 1300,
+ "Color": "yellow",
+ "ID": "asset1664173123021",
+ "Owner": "Tom",
+ "Size": 5
+ }
+transferAssetAsync: // 6. transfer from Tom to Mark
+Async Submit Transaction: TransferAsset, updates existing asset owner'
+Successfully submitted transaction to transfer ownership from Tom to Mark.
+Waiting for transaction commit.
+*** Transaction committed successfully
+getAllAssets: // 7. Check again after transferring
+Evaluate Transaction: GetAllAssets, function returns all the current assets on the ledger
+*** Result:[
+ {
+ "AppraisedValue": 300,
+ "Color": "blue",
+ "ID": "asset1",
+ "Owner": "Tomoko",
+ "Size": 5
+ },
+ {
+ "AppraisedValue": 1300,
+ "Color": "yellow",
+ "ID": "asset1664172691192",
+ "Owner": "Mark",
+ "Size": 5
+ },
+ {
+ "AppraisedValue": 1300, 
+ "Color": "yellow",
+ "ID": "asset1664173123021",
+ "Owner": "Mark", // This new created one has been transferred to Mark
+ "Size": 5
+ },
+ {
+ "AppraisedValue": 400,
+ "Color": "red",
+ "ID": "asset2",
+ "Owner": "Brad",
+ "Size": 5
+ },
+ {
+ "AppraisedValue": 500,
+ "Color": "green",
+ "ID": "asset3",
+ "Owner": "Jin Soo",
+ "Size": 10
+ },
+ {
+ "AppraisedValue": 600,
+ "Color": "yellow",
+ "ID": "asset4",
+ "Owner": "Max",
+ "Size": 10
+ },
+ {
+ "AppraisedValue": 700,
+ "Color": "black",
+ "ID": "asset5",
+ "Owner": "Adriana",
+ "Size": 15
+ },
+ {
+ "AppraisedValue": 800,
+ "Color": "white",
+ "ID": "asset6",
+ "Owner": "Michel",
+ "Size": 15
+ }
+ ]
+exampleErrorHandling: // 8. Handle error successfully
+Submit Transaction: UpdateAsset asset70, asset70 does not exist and should return an error
+Endorse error with gRPC status Aborted: rpc error: code = Aborted desc = failed to endorse transaction, see attached details for more info
+Error from endpoint: peer0.org1.example.com:7051, mspId: Org1MSP, message: chaincode response 500, Incorrect number of params. Expected 5, received 0
+2022/09/26 02:18:49 ============ application-golang ends ============
+```
