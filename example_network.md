@@ -28,6 +28,7 @@ We setup a hyperledgr fabric blockchain baseline environment which can be used f
     - [2.5.7 Upgrading a smart contract](#257-upgrading-a-smart-contract)
     - [2.5.8 Clean up (This can be the very last step, not here)](#258-clean-up-this-can-be-the-very-last-step-not-here)
   - [2.6 Running a Fabric Application](#26-running-a-fabric-application)
+  - [2.7 Creating a channel manually using configtxgen/osnadmin_channel](#27-creating-a-channel-manually-using-configtxgenosnadmin_channel)
 
   
 ## 1. Installation
@@ -104,6 +105,10 @@ Screenshot for 4 containers running:
 ![](img/example_network1.png)
 
 ![](img/example_network.png)
+
+**Notice that peers are running on ports 7051 and 9051, while the orderer is running on port 7050**.
+
+**By default, when you start the test network, it does not contain any channels**.
 
 ### 2.2 Create a channel
 
@@ -814,3 +819,26 @@ Endorse error with gRPC status Aborted: rpc error: code = Aborted desc = failed 
 Error from endpoint: peer0.org1.example.com:7051, mspId: Org1MSP, message: chaincode response 500, Incorrect number of params. Expected 5, received 0
 2022/09/26 02:18:49 ============ application-golang ends ============
 ```
+
+
+
+
+## 2.7 Creating a channel manually using configtxgen/osnadmin_channel
+
+While the **peers, ordering nodes, and Certificate Authorities** form the **physical infrastructure** of the network, **channels** are the **process** by which organizations connect with each other and interact.
+
+- Version Difference
+  - Fabric v2.3 and beyond
+    - Fabric v2.3 introduces the capability to create a channel without requiring a system channel, removing an extra layer of administration from the process. The *Create a channel* tutorial introduces the new flow.
+  - test network
+    - If you don’t yet have a network and prefer to use the test network, see *Create a channel using the test network*. 
+
+The **test network** deploys an **ordering service** and **peers** for you, this tutorial focuses solely on the process to create a channel. It is worth noting that the **test network** includes a **createChannel subcommand (see 2.2)** that can be used to create a channel, but this tutorial explains how do it **manually**, the process that is **required when you do not use the test network**.
+
+- Note:
+
+- If you are not using the test network, you should follow the instructions for how to deploy an ordering service without a system channel. In the Fabric v2.3 test network sample (this test network is v2.4), the single-node ordering service is deployed without a system channel.
+- If you prefer to learn how to create a channel on an ordering service that includes the system channel, you should refer to the Create a channel tutorial from Fabric v2.2. In the Fabric v2.2 test network sample, the single-node ordering service is deployed with a system channel.
+
+
+I didn't continues since we are using test network and we have used section 2.2 to create a channel. In future when we deploy our own network we don't need this part; just follow *Create a channel* tutorial. 

@@ -68,7 +68,10 @@ Now that you have downloaded Fabric and the samples, you can start running Fabri
 
 ## 2. Using the Fabric test network: 
 
-More detials please check out [Run the example (Fabric test network)](example_network.md).
+More detials please check out [Run the example (Fabric test network)](example_network.md). I only keep the core part of official website contents which might be too redunctant and complicated. It would be good enough to read this section only.
+
+It's highly recommended you play with the ttest network before you go to next section.
 
 ## 3. Deploy my production network
+
 
