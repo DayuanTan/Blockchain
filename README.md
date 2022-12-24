@@ -7,6 +7,7 @@ We setup a hyperledgr fabric blockchain baseline environment which can be used f
   - [1. Installation](#1-installation)
   - [2. Using the Fabric test network:](#2-using-the-fabric-test-network)
   - [3. Deploy my production network](#3-deploy-my-production-network)
+  - [3. 1 Step one: Decide on your network configuration](#3-1-step-one-decide-on-your-network-configuration)
 
 ## 0. Prerequisites
 - Advanced Operating Systems (Distributed Systems) - Graduate level 
@@ -75,3 +76,13 @@ It's highly recommended you play with the ttest network before you go to next se
 ## 3. Deploy my production network
 
 
+## 3. 1 Step one: Decide on your network configuration
+
+- Blockchain
+  - 7 blockchain peers
+    - 1 orderer
+    - 6 peers which as hub for multiple interrsections
+- 12 nodes/intersections
+ 
+
+![](img/intersection_12TL_archi2.png)

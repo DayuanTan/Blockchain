@@ -28,7 +28,7 @@ We setup a hyperledgr fabric blockchain baseline environment which can be used f
     - [2.5.7 Upgrading a smart contract](#257-upgrading-a-smart-contract)
     - [2.5.8 Clean up (This can be the very last step, not here)](#258-clean-up-this-can-be-the-very-last-step-not-here)
   - [2.6 Running a Fabric Application](#26-running-a-fabric-application)
-  - [2.7 Creating a channel manually using configtxgen/osnadmin_channel](#27-creating-a-channel-manually-using-configtxgenosnadmin_channel)
+  - [2.7 Creating a channel manually using configtxgen/osnadmin\_channel](#27-creating-a-channel-manually-using-configtxgenosnadmin_channel)
 
   
 ## 1. Installation
@@ -338,12 +338,24 @@ The result will show that "asset6" was transferred to Christopher:
 {"AppraisedValue":800,"Color":"white","ID":"asset6","Owner":"Christopher","Size":15}
 ```
 
+(
+For your convenience, to set the following environment variables to operate as Org1:
+
+```c
+export CORE_PEER_TLS_ENABLED=true
+export CORE_PEER_LOCALMSPID="Org1MSP"
+export CORE_PEER_TLS_ROOTCERT_FILE=${PWD}/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt
+export CORE_PEER_MSPCONFIGPATH=${PWD}/organizations/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp
+export CORE_PEER_ADDRESS=localhost:7051
+```
+
+)
 
 ## 2.5 Deploying a smart contract to a channel
 
 ### 2.5.1 Setup Logspout the log system
 
-he tool collects the output streams from different Docker containers into one place, making it easy to see what’s happening from a single window. The Logspout tool will continuously stream logs to your terminal, so you will need to use a new terminal window. 
+The tool collects the output streams from different Docker containers into one place, making it easy to see what’s happening from a single window. The Logspout tool will continuously stream logs to your terminal, so you will need to use a new terminal window. 
 
 Open a new terminal and navigate to the test-network directory.
 ```c
