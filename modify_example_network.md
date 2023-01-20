@@ -1,5 +1,9 @@
 # Blockchain
 
+This file is based on [example_network.md](./example_network.md). I modify it by adding nodes to total 7 nodes.
+
+
+
 We setup a hyperledgr fabric blockchain baseline environment which can be used for future projects built on it.
 
 - [Blockchain](#blockchain)
