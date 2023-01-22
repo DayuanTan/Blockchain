@@ -31,7 +31,12 @@ We setup a hyperledgr fabric blockchain baseline environment which can be used f
       - [Configuration File](#configuration-file)
       - [Use of cryptogen](#use-of-cryptogen)
       - [Want to modify (add peers)](#want-to-modify-add-peers)
+      - [Discussion](#discussion)
   - [4 Modify test network](#4-modify-test-network)
+    - [4.1 Where and what I change](#41-where-and-what-i-change)
+      - [4.1.1 change cryptogen config file](#411-change-cryptogen-config-file)
+      - [4.1.2 add docker compose file for new added peers](#412-add-docker-compose-file-for-new-added-peers)
+      - [4.1.3 run](#413-run)
     - [2.4.3 Change the owner of an asset on the ledger by invoking the asset-transfer (basic) chaincode](#243-change-the-owner-of-an-asset-on-the-ledger-by-invoking-the-asset-transfer-basic-chaincode)
     - [Check the change in ledge from Org2 peer](#check-the-change-in-ledge-from-org2-peer)
       - [Environment variables for Org2](#environment-variables-for-org2-1)
@@ -558,21 +563,173 @@ We can see how cryptogen works: with this command and configuration files, we ca
 
 We then need to change ```test-network/organizations/cryptogen/crypto-config-org1.yaml``` and ```test-network/organizations/cryptogen/crypto-config-org2.yaml``` then run ```./network.sh up``` again.
 
+#### Discussion
+Cryptogen by far is the simplest way for us to generate crypto material for typical network designs. No matter how many orderers we are to deploy (one for Solo, five for Raft, etc) in orderer organization, how many peers needed for each peer organization, or how many client users needed in each organization, we can specify the requirement in the configuration files and generate the material with a simple command.
+
+This is also where the limitation lies. From Hyperledger Fabric documentation, we learn that cryptogen is good for generating crypto material for testing purposes, and would normally not be used in production operation. 
 
 ## 4 Modify test network
 
+### 4.1 Where and what I change
+
+#### 4.1.1 change cryptogen config file
+
+We add 2 peers for each org. 
+- Before: 3 orgs. 
+  - Org1 has 1 peer *peer0.org1.example.com*; 
+  - Org2 has 1 peer *peer0.org2.example.com*; 
+  - orderer org had one orderer peer *orderer.example.com*.
+- After: 3 orgs. 
+  - Org1 has 3 peers 
+    - peer0.org1.example.com
+    - peer1.org1.example.com
+    - peer2.org1.example.com
+  - Org2 has 3 peers 
+    - peer0.org2.example.com
+    - peer1.org2.example.com
+    - peer2.org2.example.com
+  - orderer org had one orderer peer *orderer.example.com*.
+  
+![](img/example_network_7nodes3.png)
+
+Change file ```test-network/organizations/cryptogen/crypto-config-org1.yaml```:
+![](img/change1.png) 
+
+
+Change file ```test-network/organizations/cryptogen/crypto-config-org2.yaml```:
+![](img/change2.png)
+
+This will make the cryptogen to generate 3 peers instead of 1 peer:
+Before:![](img/change_addpeers_before.png)
+After:![](img/change_addpeers_after.png)
+
+But this is not enough. We also need to change the docker compose file to setup containers for each new added peers. 
+
+#### 4.1.2 add docker compose file for new added peers
+
+Change file ```test-network/compose/compose-test-net.yaml```:
+![](img/change_compose1-0.png)
+![](img/change_compose1-1.png)
+
+
+Change file ```test-network/compose/compose-couch.yaml```:
+![](img/change_compose_couch.png)
+
+
+
+
+Change file ```test-network/compose/podman/podman-compose-test-net.yaml```:
+![](img/change_podman.png)
+
+
+
+#### 4.1.3 run 
+
+
+```c
+// firstly turn down everything
+cd ~/go/src/github.com/DayuanTan/fabric-samples-modified/test-network
+
+fabric-samples-modified/test-network$ ./network.sh down 
+
+fabric-samples-modified/test-network$ ./network.sh up
+```
+
+
+Print before:
+```
+~/go/src/github.com/DayuanTan/fabric-samples/test-network(main✔) ]
+ $ ./network.sh up
+Using docker and docker-compose
+Starting nodes with CLI timeout of '5' tries and CLI delay of '3' seconds and using database 'leveldb' with crypto from 'cryptogen'
+LOCAL_VERSION=2.4.4
+DOCKER_IMAGE_VERSION=2.4.4
+/Users/dyt/go/src/github.com/DayuanTan/fabric-samples/test-network/../bin/cryptogen
+Generating certificates using cryptogen tool
+Creating Org1 Identities
++ cryptogen generate --config=./organizations/cryptogen/crypto-config-org1.yaml --output=organizations
+org1.example.com
++ res=0
+Creating Org2 Identities
++ cryptogen generate --config=./organizations/cryptogen/crypto-config-org2.yaml --output=organizations
+org2.example.com
++ res=0
+Creating Orderer Org Identities
++ cryptogen generate --config=./organizations/cryptogen/crypto-config-orderer.yaml --output=organizations
++ res=0
+Generating CCP files for Org1 and Org2
+Creating network "fabric_test" with the default driver
+Creating volume "compose_orderer.example.com" with default driver
+Creating volume "compose_peer0.org1.example.com" with default driver
+Creating volume "compose_peer0.org2.example.com" with default driver
+Creating peer0.org2.example.com ... done
+Creating orderer.example.com    ... done
+Creating peer0.org1.example.com ... done
+Creating cli                    ... done
+CONTAINER ID   IMAGE                               COMMAND             CREATED         STATUS                  PORTS                                                                    NAMES
+32fceeb5dbf1   hyperledger/fabric-tools:latest     "/bin/bash"         1 second ago    Up Less than a second                                                                            cli
+6d43025b9ee3   hyperledger/fabric-orderer:latest   "orderer"           2 seconds ago   Up 1 second             0.0.0.0:7050->7050/tcp, 0.0.0.0:7053->7053/tcp, 0.0.0.0:9443->9443/tcp   orderer.example.com
+55c0408edbad   hyperledger/fabric-peer:latest      "peer node start"   2 seconds ago   Up Less than a second   0.0.0.0:7051->7051/tcp, 0.0.0.0:9444->9444/tcp                           peer0.org1.example.com
+a22f3ed0c84d   hyperledger/fabric-peer:latest      "peer node start"   2 seconds ago   Up Less than a second   0.0.0.0:9051->9051/tcp, 7051/tcp, 0.0.0.0:9445->9445/tcp                 peer0.org2.example.com
+```
+
+
+Print after (now):
+```
+~/go/src/github.com/DayuanTan/fabric-samples-modified/test-network(main✗) ]
+ $ ./network.sh up
+Using docker and docker-compose
+Starting nodes with CLI timeout of '5' tries and CLI delay of '3' seconds and using database 'leveldb' with crypto from 'cryptogen'
+LOCAL_VERSION=2.4.4
+DOCKER_IMAGE_VERSION=2.4.4
+/Users/dyt/go/src/github.com/DayuanTan/fabric-samples-modified/test-network/../bin/cryptogen
+Generating certificates using cryptogen tool
+Creating Org1 Identities
++ cryptogen generate --config=./organizations/cryptogen/crypto-config-org1.yaml --output=organizations
+org1.example.com
++ res=0
+Creating Org2 Identities
++ cryptogen generate --config=./organizations/cryptogen/crypto-config-org2.yaml --output=organizations
+org2.example.com
++ res=0
+Creating Orderer Org Identities
++ cryptogen generate --config=./organizations/cryptogen/crypto-config-orderer.yaml --output=organizations
++ res=0
+Generating CCP files for Org1 and Org2
+Creating network "fabric_test" with the default driver
+Creating volume "compose_orderer.example.com" with default driver
+Creating volume "compose_peer0.org1.example.com" with default driver
+Creating volume "compose_peer0.org2.example.com" with default driver
+Creating volume "compose_peer1.org1.example.com" with default driver
+Creating volume "compose_peer1.org2.example.com" with default driver
+Creating volume "compose_peer2.org1.example.com" with default driver
+Creating volume "compose_peer2.org2.example.com" with default driver
+Creating peer2.org2.example.com ... done
+Creating peer1.org1.example.com ... done
+Creating peer0.org2.example.com ... done
+Creating orderer.example.com    ... done
+Creating peer2.org1.example.com ... done
+Creating peer1.org2.example.com ... done
+Creating peer0.org1.example.com ... done
+Creating cli                    ... done
+CONTAINER ID   IMAGE                               COMMAND             CREATED         STATUS                  PORTS                                                                    NAMES
+906085084e55   hyperledger/fabric-tools:latest     "/bin/bash"         1 second ago    Up Less than a second                                                                            cli
+29a740721c7c   hyperledger/fabric-peer:latest      "peer node start"   3 seconds ago   Up 1 second             0.0.0.0:9051->9051/tcp, 7051/tcp, 0.0.0.0:9445->9445/tcp                 peer0.org2.example.com
+835a58990199   hyperledger/fabric-peer:latest      "peer node start"   3 seconds ago   Up 1 second             0.0.0.0:29051->29051/tcp, 7051/tcp, 0.0.0.0:29445->29445/tcp             peer1.org2.example.com
+cfb1c0106c58   hyperledger/fabric-peer:latest      "peer node start"   3 seconds ago   Up 1 second             0.0.0.0:37051->37051/tcp, 7051/tcp, 0.0.0.0:39444->39444/tcp             peer2.org1.example.com
+96139f30e963   hyperledger/fabric-peer:latest      "peer node start"   3 seconds ago   Up 1 second             0.0.0.0:17051->17051/tcp, 7051/tcp, 0.0.0.0:19444->19444/tcp             peer1.org1.example.com
+6156c82c04d5   hyperledger/fabric-orderer:latest   "orderer"           3 seconds ago   Up 1 second             0.0.0.0:7050->7050/tcp, 0.0.0.0:7053->7053/tcp, 0.0.0.0:9443->9443/tcp   orderer.example.com
+ac4b1f64b193   hyperledger/fabric-peer:latest      "peer node start"   3 seconds ago   Up 1 second             0.0.0.0:7051->7051/tcp, 0.0.0.0:9444->9444/tcp                           peer0.org1.example.com
+fe539c5a2ef8   hyperledger/fabric-peer:latest      "peer node start"   3 seconds ago   Up 1 second             0.0.0.0:49051->49051/tcp, 7051/tcp, 0.0.0.0:49445->49445/tcp             peer2.org2.example.com
+```
 
 
 
 
 
 
-
-
-
-
-
-
+It shows the peers materials have been generated successfully and the docker have been setup and turn up successfully.
+Next we need to add each peers to channel, deploy chaincode, and test.
 
 
 
