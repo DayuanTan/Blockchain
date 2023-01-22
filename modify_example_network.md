@@ -1,26 +1,41 @@
 # Blockchain
 
-This file is based on [example_network.md](./example_network.md). I modify it by adding nodes to total 7 nodes.
 
+
+|Notice:|
+|-|
+|This file is based on [example_network.md](./example_network.md). I modify it by adding nodes to total 7 nodes.|
+|Official webpage mentions that they don't recommend to modify their test network: "modifications to the scripts are discouraged and could break the network". But I found a way to do it. Deploying a production network takes more efforts considering I only need to add some nodes.|
+||
 
 
 We setup a hyperledgr fabric blockchain baseline environment which can be used for future projects built on it.
 
 - [Blockchain](#blockchain)
-  - [1. Installation](#1-installation)
+  - [1. Installation (Skip. No need.)](#1-installation-skip-no-need)
   - [2. Using the Fabric test network:](#2-using-the-fabric-test-network)
     - [2.1 Run the example (Fabric test network)](#21-run-the-example-fabric-test-network)
+    - [Set CLI environment](#set-cli-environment)
+      - [Environment variables for Org1](#environment-variables-for-org1)
+      - [Environment variables for Org2](#environment-variables-for-org2)
     - [2.2 Create a channel](#22-create-a-channel)
     - [2.3 Starting a chaincode on the channel](#23-starting-a-chaincode-on-the-channel)
     - [2.4 Interacting with the network](#24-interacting-with-the-network)
-    - [2.4.1 Set the environment variables](#241-set-the-environment-variables)
-      - [Environment variables for Org1 (Use these to switch to Org1):](#environment-variables-for-org1-use-these-to-switch-to-org1)
-    - [2.4.2 Initialize the ledger with assets](#242-initialize-the-ledger-with-assets)
-    - [Query the ledger](#query-the-ledger)
+    - [2.4.1 Initialize the ledger with assets](#241-initialize-the-ledger-with-assets)
+    - [2.4.2 Query the ledger](#242-query-the-ledger)
+  - [3. Tool *cryptogen*](#3-tool-cryptogen)
+    - [3.1 fabric-samples-modified folder structure](#31-fabric-samples-modified-folder-structure)
+      - [certificate](#certificate)
+      - [TLS](#tls)
+    - [3.2 Generating Crypto Material using *Cryptogen*](#32-generating-crypto-material-using-cryptogen)
+      - [Configuration File](#configuration-file)
+      - [Use of cryptogen](#use-of-cryptogen)
+      - [Want to modify (add peers)](#want-to-modify-add-peers)
+  - [4 Modify test network](#4-modify-test-network)
     - [2.4.3 Change the owner of an asset on the ledger by invoking the asset-transfer (basic) chaincode](#243-change-the-owner-of-an-asset-on-the-ledger-by-invoking-the-asset-transfer-basic-chaincode)
     - [Check the change in ledge from Org2 peer](#check-the-change-in-ledge-from-org2-peer)
-      - [Environment variables for Org2](#environment-variables-for-org2)
-      - [Environment variables for Org1](#environment-variables-for-org1)
+      - [Environment variables for Org2](#environment-variables-for-org2-1)
+      - [Environment variables for Org1](#environment-variables-for-org1-1)
   - [2.5 Deploying a smart contract to a channel](#25-deploying-a-smart-contract-to-a-channel)
     - [2.5.1 Setup Logspout the log system](#251-setup-logspout-the-log-system)
     - [2.5.2 Package the smart contract - Go](#252-package-the-smart-contract---go)
@@ -38,43 +53,7 @@ We setup a hyperledgr fabric blockchain baseline environment which can be used f
   - [2.7 Creating a channel manually using configtxgen/osnadmin\_channel](#27-creating-a-channel-manually-using-configtxgenosnadmin_channel)
 
   
-## 1. Installation
-
-0. Check prerequisites
-
-https://hyperledger-fabric.readthedocs.io/en/latest/prereqs.html
-
-
-1. Create a folder for Go. 
-
-```
-mkdir -p $HOME/go/src/github.com/<your_github_userid>
-
-cd $HOME/go/src/github.com/<your_github_userid>
-```
-This is a Golang Community recommendation for Go projects.
-
-2. To get the install script:
-
-```
-curl -sSLO https://raw.githubusercontent.com/hyperledger/fabric/main/scripts/install-fabric.sh && chmod +x install-fabric.sh
-```
-
-This will download ```install-fabric.sh``` into the directory ```$HOME/go/src/github.com/<your_github_userid>```.
-
-
-3. Pull the Docker containers and clone the samples repo
-```
-./install-fabric.sh docker samples binary 
-
-or 
-
-./install-fabric.sh d s b  
-```
-
-This will  download a directory named ```fabric-samples```.
-
-Now that you have downloaded Fabric and the samples, you can start running Fabric.
+## 1. Installation (Skip. No need.)
 
 ## 2. Using the Fabric test network: 
 
@@ -86,14 +65,20 @@ Reference: https://hyperledger-fabric.readthedocs.io/en/latest/test_network.html
 
 Then you can run  the example. 
 
-*Don't modify this example. Once modify, it doesn't work. Later you create your own network.*
-
 You can find the scripts to bring up the network in the test-network directory of the fabric-samples repository. Navigate to the test network directory by using the following command:
+
+
+||
+|-|
+|To avoid affect offical test network: |
+|```~/go/src/github.com/DayuanTan$ cp -r fabric-samples fabric-samples-modified```|
+|Below will be inside ```fabric-samples-modified``` folder.|
 
 ```c
 Start your docker. // If you use "Docker Desktop" just click its icon. 
 
-cd fabric-samples/test-network // continue use same directory as above // FYC: cd /Users/dyt/go/src/github.com/DayuanTan/fabric-samples/test-network
+cd fabric-samples-modified/test-network // continue use same directory as above 
+// FYC: cd /Users/dyt/go/src/github.com/DayuanTan/fabric-samples-modified/test-network
 
 ./network.sh down // to make sure everything is down
 
@@ -117,41 +102,77 @@ Screenshot for 4 containers running:
 
 **By default, when you start the test network, it does not contain any channels**.
 
+### Set CLI environment 
+
+
+```c
+export FABRIC_CFG_PATH=$PWD/../config/
+export PATH=$PATH:$PWD/../bin/
+```
+
+#### Environment variables for Org1
+
+```c
+export CORE_PEER_TLS_ENABLED=true
+export CORE_PEER_LOCALMSPID="Org1MSP"
+export CORE_PEER_TLS_ROOTCERT_FILE=${PWD}/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt
+export CORE_PEER_MSPCONFIGPATH=${PWD}/organizations/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp
+export CORE_PEER_ADDRESS=localhost:7051
+```
+
+#### Environment variables for Org2
+
+```c
+export CORE_PEER_TLS_ENABLED=true
+export CORE_PEER_LOCALMSPID="Org2MSP"
+export CORE_PEER_TLS_ROOTCERT_FILE=${PWD}/organizations/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/tls/ca.crt
+export CORE_PEER_MSPCONFIGPATH=${PWD}/organizations/peerOrganizations/org2.example.com/users/Admin@org2.example.com/msp
+export CORE_PEER_ADDRESS=localhost:9051
+```
+
 ### 2.2 Create a channel
+
+Before creating a channel, you can use ```peer channel list``` command to check which channel current peer has joined:
+```c
+$ peer channel list
+INFO [channelCmd] InitCmdFactory -> Endorser and orderer connections initialized
+Channels peers has joined:
+```
+
 
 To create a channel between Org1 and Org2 and join their peers to the channel
 ```
-./network.sh createChannel -c dayuanchannel
+./network.sh createChannel -c globalchannel
 ```
 It will print 
 ```
 Using docker and docker-compose
-Creating channel 'dayuanchannel'.
+Creating channel 'globalchannel'.
 
 ...
 
-Generating channel genesis block 'dayuanchannel.block'
+Generating channel genesis block 'globalchannel.block'
 
 ...
 
-Load -> Loaded configuration: /Users/dyt/go/src/github.com/DayuanTan/fabric-samples/test-network/configtx/configtx.yaml
+Load -> Loaded configuration: /Users/dyt/go/src/github.com/DayuanTan/fabric-samples-modified/test-network/configtx/configtx.yaml
 doOutputBlock -> Generating genesis block
 doOutputBlock -> Creating application channel genesis block
 doOutputBlock -> Writing genesis block
 
 ...
 
-Creating channel dayuanchannel
+Creating channel globalchannel
 Using organization 1
 {
-	"name": "dayuanchannel",
-	"url": "/participation/v1/channels/dayuanchannel",
+	"name": "globalchannel",
+	"url": "/participation/v1/channels/globalchannel",
 	"consensusRelation": "consenter",
 	"status": "active",
 	"height": 1
 }
 
-Channel 'dayuanchannel' created
+Channel 'globalchannel' created
 Joining org1 peer to the channel...
 Using organization 1
 InitCmdFactory -> Endorser and orderer connections initialized
@@ -163,31 +184,38 @@ executeJoin -> Successfully submitted proposal to join channel
 
 Setting anchor peer for org1...
 Using organization 1
-Fetching channel config for channel dayuanchannel
+Fetching channel config for channel globalchannel
 Using organization 1
 Fetching the most recent configuration block for the channel
-+ peer channel fetch config config_block.pb -o orderer.example.com:7050 --ordererTLSHostnameOverride orderer.example.com -c dayuanchannel --tls --cafile /opt/gopath/src/github.com/hyperledger/fabric/peer/organizations/ordererOrganizations/example.com/tlsca/tlsca.example.com-cert.pem
++ peer channel fetch config config_block.pb -o orderer.example.com:7050 --ordererTLSHostnameOverride orderer.example.com -c globalchannel --tls --cafile /opt/gopath/src/github.com/hyperledger/fabric/peer/organizations/ordererOrganizations/example.com/tlsca/tlsca.example.com-cert.pem
 InitCmdFactory -> Endorser and orderer connections initialized
 readBlock -> Received block: 0
 fetch -> Retrieving last config block: 0
 readBlock -> Received block: 0
 
 
-Generating anchor peer update transaction for Org1 on channel dayuanchannel
+Generating anchor peer update transaction for Org1 on channel globalchannel
 
 InitCmdFactory -> Endorser and orderer connections initialized
 update -> Successfully submitted channel update
-Anchor peer set for org 'Org1MSP' on channel 'dayuanchannel'
+Anchor peer set for org 'Org1MSP' on channel 'globalchannel'
 
 Setting anchor peer for org2...
 ...
 
-
+Anchor peer set for org 'Org2MSP' on channel 'globalchannel'
+Channel 'globalchannel' joined
 ```
 
 
 ![](img/example_structure1.png)
 
+```c
+$ peer channel list
+INFO [channelCmd] InitCmdFactory -> Endorser and orderer connections initialized
+Channels peers has joined:
+globalchannel
+```
 
 ### 2.3 Starting a chaincode on the channel
 
@@ -198,7 +226,7 @@ In Fabric, **smart contracts** are deployed on the network in packages referred 
 To start a chaincode on the channel using the following command:
 
 ```c
-./network.sh deployCC -ccn basic -c dayuanchannel -ccp ../asset-transfer-basic/chaincode-go -ccl go
+./network.sh deployCC -ccn basic -c globalchannel -ccp ../asset-transfer-basic/chaincode-go -ccl go
 
 // -ccp <path>  - File path to the chaincode. (This is where we def functions. In future we may want to edit codes here.)
 
@@ -212,7 +240,7 @@ To start a chaincode on the channel using the following command:
 
 It will print below following steps we mentioned in above paragraph, and those printed log reflects the so called "[chaincode life cycle](https://hyperledger-fabric.readthedocs.io/en/latest/chaincode_lifecycle.html)":
 ```
-deploying chaincode on channel 'dayuanchannel'
+deploying chaincode on channel 'globalchannel'
 ...
 Vendoring Go dependencies at ../asset-transfer-basic/chaincode-go
 ...
@@ -220,95 +248,32 @@ Chaincode is packaged
 Chaincode is installed on peer0.org1
 Chaincode is installed on peer0.org2
 Query installed successful on peer0.org1 on channel
-Chaincode definition approved on peer0.org1 on channel 'dayuanchannel'
-Chaincode definition approved on peer0.org2 on channel 'dayuanchannel'
-Chaincode definition committed on channel 'dayuanchannel'
-Query chaincode definition successful on peer0.org1 on channel 'dayuanchannel'
-Query chaincode definition successful on peer0.org2 on channel 'dayuanchannel'
+Chaincode definition approved on peer0.org1 on channel 'globalchannel'
+Chaincode definition approved on peer0.org2 on channel 'globalchannel'
+Chaincode definition committed on channel 'globalchannel'
+Query chaincode definition successful on peer0.org1 on channel 'globalchannel'
+Query chaincode definition successful on peer0.org2 on channel 'globalchannel'
 ```
 
 ![](img/example_structure3.png)
 
 ### 2.4 Interacting with the network
 
-### 2.4.1 Set the environment variables
+### 2.4.1 Initialize the ledger with assets
 
-Use the following command to add those binaries to your CLI (Command line interface) Path:
-
-```c
-// just help show the effect of below command
-$ echo $PATH
-/Users/dyt/go/bin:/Users/dyt/omnetpp-5.5.1/bin:/Users/dyt/omnetpp-5.5.1/tools/macosx/bin:/Library/Frameworks/Python.framework/Versions/3.7/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/Applications/VMware Fusion.app/Contents/Public:/Library/TeX/texbin:/usr/local/go/bin:/opt/X11/bin:/Library/Apple/usr/bin:/Library/Frameworks/Mono.framework/Versions/Current/Commands:/Applications/Wireshark.app/Contents/MacOS
-
-$ export PATH=${PWD}/../bin:$PATH // need to do this every time after clossing current CLI
-
-// just help show the effect of above command
-$ echo $PATH
-/Users/dyt/go/src/github.com/DayuanTan/fabric-samples/test-network/../bin:/Users/dyt/go/bin:/Users/dyt/omnetpp-5.5.1/bin:/Users/dyt/omnetpp-5.5.1/tools/macosx/bin:/Library/Frameworks/Python.framework/Versions/3.7/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/Applications/VMware Fusion.app/Contents/Public:/Library/TeX/texbin:/usr/local/go/bin:/opt/X11/bin:/Library/Apple/usr/bin:/Library/Frameworks/Mono.framework/Versions/Current/Commands:/Applications/Wireshark.app/Contents/MacOS
-```
-
-
-You also need to set the FABRIC_CFG_PATH to point to the core.yaml file in the fabric-samples repository: 
-```c 
-// just help show the effect of below command
-$ echo $FABRIC_CFG_PATH
-(empty, no print)
-
-$ export FABRIC_CFG_PATH=$PWD/../config/ // need to do this every time after clossing current CLI
-
-// just help show the effect of above command
-$ echo $FABRIC_CFG_PATH
-/Users/dyt/go/src/github.com/DayuanTan/fabric-samples/test-network/../config/
-```
-
-Then set the environment variables that allow you to operate the peer CLI as Org1: Execute below commands one by one:
-
-```
-export CORE_PEER_TLS_ENABLED=true
-```
-```
-export CORE_PEER_LOCALMSPID="Org1MSP"
-```
-```
-export CORE_PEER_TLS_ROOTCERT_FILE=${PWD}/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt
-```
-CORE_PEER_TLS_ROOTCERT_FILE and CORE_PEER_MSPCONFIGPATH environment variables point to the Org1 crypto material in the organizations folder.
-```
-export CORE_PEER_MSPCONFIGPATH=${PWD}/organizations/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp
-```
-```
-export CORE_PEER_ADDRESS=localhost:7051
-```
-
-For your convenience in future, copy all five together below:
-
-#### Environment variables for Org1 (Use these to switch to Org1):
-
-```
-export CORE_PEER_TLS_ENABLED=true
-
-export CORE_PEER_LOCALMSPID="Org1MSP"
-
-export CORE_PEER_TLS_ROOTCERT_FILE=${PWD}/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt
-
-export CORE_PEER_MSPCONFIGPATH=${PWD}/organizations/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp
-
-export CORE_PEER_ADDRESS=localhost:7051
-```
-
-### 2.4.2 Initialize the ledger with assets
+(Must initialize before query)
 
 Then to initialize the ledger with assets. (Note the CLI does not access the Fabric Gateway peer, so each endorsing peer must be specified.)
 ```
-peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile "${PWD}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem" -C dayuanchannel -n basic --peerAddresses localhost:7051 --tlsRootCertFiles "${PWD}/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt" --peerAddresses localhost:9051 --tlsRootCertFiles "${PWD}/organizations/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/tls/ca.crt" -c '{"function":"InitLedger","Args":[]}'
+peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile "${PWD}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem" -C globalchannel -n basic --peerAddresses localhost:7051 --tlsRootCertFiles "${PWD}/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt" --peerAddresses localhost:9051 --tlsRootCertFiles "${PWD}/organizations/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/tls/ca.crt" -c '{"function":"InitLedger","Args":[]}'
 ```
 
 If success it will print "INFO [chaincodeCmd] chaincodeInvokeOrQuery -> Chaincode invoke successful. result: status:200"
 
-### Query the ledger
+### 2.4.2 Query the ledger
 We can now query the ledger from your CLI. Run the following command to get the list of assets that were added to your channel ledger:
 ```
-peer chaincode query -C dayuanchannel -n basic -c '{"Args":["GetAllAssets"]}'
+peer chaincode query -C globalchannel -n basic -c '{"Args":["GetAllAssets"]}'
 ```
 
 It prints:
@@ -353,6 +318,270 @@ It prints:
   }
 ]
 ```
+
+Above proves the test network with 3 peers works well. 
+Next I am adding 4 more peers. (Add 2 nodes on each org.)
+
+## 3. Tool *cryptogen*
+
+### 3.1 fabric-samples-modified folder structure
+
+-- testnetwork
+-- -- channel-artifacts
+-- -- -- globalchannel.block
+-- -- compose
+-- -- -- docker
+-- -- -- -- peercfg
+-- -- -- -- docker-compose-ca.yaml
+-- -- -- -- docker-compose-couch.yaml
+-- -- -- -- docker-compose-test-net.yaml
+-- -- -- podman
+-- -- -- compose-ca.yaml
+-- -- -- compose-couch.yaml
+-- -- -- compose-test-net.yaml
+-- -- configtx
+-- -- -- configtx.yaml
+-- -- organizations
+-- -- -- cryptogen // config file for cryptogen
+-- -- -- -- crypto-config-orderer.yaml
+-- -- -- -- crypto-config-org1.yaml
+-- -- -- -- crypto-config-org2.yaml
+-- -- -- fabric-ca
+-- -- -- ordererOrganizations
+-- -- -- -- example.com
+-- -- -- -- -- ca
+-- -- -- -- -- msp
+-- -- -- -- -- -- admincerts
+-- -- -- -- -- -- cacerts
+-- -- -- -- -- -- -- ca.example.com-cert.pem
+-- -- -- -- -- -- tlscacerts
+-- -- -- -- -- -- -- tlsca.example.com-cert.pem
+-- -- -- -- -- -- config.yaml
+-- -- -- -- -- orderers
+-- -- -- -- -- -- orderer.example.com
+-- -- -- -- -- -- -- msp
+-- -- -- -- -- -- -- -- admincerts
+-- -- -- -- -- -- -- -- cacerts
+-- -- -- -- -- -- -- -- keystore
+-- -- -- -- -- -- -- -- -- priv_sk
+-- -- -- -- -- -- -- -- signcerts
+-- -- -- -- -- -- -- -- tlscacerts
+-- -- -- -- -- -- -- tls
+-- -- -- -- -- -- -- -- ca.crt
+-- -- -- -- -- -- -- -- server.crt
+-- -- -- -- -- -- -- -- server.key
+-- -- -- -- -- tlsca
+-- -- -- -- -- -- priv_sk
+-- -- -- -- -- -- ttlsca.example.com-cert.pem
+-- -- -- -- -- users
+-- -- -- -- -- -- Admin@example.com
+-- -- -- -- -- -- -- msp
+-- -- -- -- -- -- -- -- admincerts
+-- -- -- -- -- -- -- -- cacerts
+-- -- -- -- -- -- -- -- keystore
+-- -- -- -- -- -- -- -- -- priv_sk
+-- -- -- -- -- -- -- -- signcerts
+-- -- -- -- -- -- -- -- tlscacerts
+-- -- -- -- -- -- -- tls
+-- -- -- -- -- -- -- -- ca.crt
+-- -- -- -- -- -- -- -- client.crt
+-- -- -- -- -- -- -- -- client.key
+-- -- -- peerOrrganizations
+-- -- -- -- org1.example.com
+-- -- -- -- -- ca // a directory holding crypto material for CA of Org1. It is this CA issuing identity (certificate) to all entities within Org1.
+-- -- -- -- -- -- ca.org1.example.com-cert.pem
+-- -- -- -- -- -- priv_sk
+-- -- -- -- -- msp // it is the material joining a consortium network.
+-- -- -- -- -- -- admincerts
+-- -- -- -- -- -- cacerts
+-- -- -- -- -- -- tlscacerts
+-- -- -- -- -- peers // a directory holding a list of peers under Org1, and each peer has its own crypto material, of both identity and TLS
+-- -- -- -- -- -- peer0.org1.example.com
+=-- -- -- -- -- -- msp // is for identity. This directory structure will be seen in every entity. It is the structure for all entities, both network components and network users.
+-- -- -- -- -- -- -- -- admincerts
+-- -- -- -- -- -- -- -- cacerts
+-- -- -- -- -- -- -- -- keystore // private secret key
+-- -- -- -- -- -- -- -- signcerts // certificate
+-- -- -- -- -- -- -- -- tlscacerts
+-- -- -- -- -- -- -- -- config.yaml
+-- -- -- -- -- -- -- tls // is for TLS material. This directory structure will be seen in every entity. In a TLS communication, network components play a TLS server role. Therefore each network component is installed with a TLS server key and server certificate. 
+-- -- -- -- -- -- -- -- ca.crt
+-- -- -- -- -- -- -- -- server.crt
+-- -- -- -- -- -- -- -- server.key
+-- -- -- -- -- tlsca // a directory holding the TLS CA
+-- -- -- -- -- users // a directory holding a list of network users under Org1, and each peer has its own crypto material, of both identity and TLS
+-- -- -- -- -- -- Admin@org1.example.com
+-- -- -- -- -- -- -- msp
+-- -- -- -- -- -- -- -- admincerts
+-- -- -- -- -- -- -- -- cacerts
+-- -- -- -- -- -- -- -- keystore
+-- -- -- -- -- -- -- -- signcerts
+-- -- -- -- -- -- -- -- tlscacerts
+-- -- -- -- -- -- -- tls // Network user plays a TLS client role. Therefore each network user is installed with a TLS client key and client certificate. 
+-- -- -- -- -- -- -- -- ca.crt
+-- -- -- -- -- -- -- -- client.crt
+-- -- -- -- -- -- -- -- client.key
+-- -- -- -- -- -- User1@org1.example.com
+-- -- -- -- -- -- -- msp
+-- -- -- -- -- -- -- -- admincerts
+-- -- -- -- -- -- -- -- cacerts
+-- -- -- -- -- -- -- -- keystore
+-- -- -- -- -- -- -- -- signcerts
+-- -- -- -- -- -- -- -- tlscacerts
+-- -- -- -- -- -- -- tls
+-- -- -- -- -- -- -- -- ca.crt
+-- -- -- -- -- -- -- -- client.crt
+-- -- -- -- -- -- -- -- client.key
+-- -- -- -- -- connection-org1.json // these are the connection profile files in different formats. They will be used in client applications.
+-- -- -- -- -- connection-org1.yaml // these are the connection profile files in different formats. They will be used in client applications.
+-- -- -- -- org2.example.com
+-- -- -- -- -- ca
+-- -- -- -- -- msp
+-- -- -- -- -- -- admincerts
+-- -- -- -- -- -- cacerts
+-- -- -- -- -- -- tlscacerts
+-- -- -- -- -- peers
+-- -- -- -- -- -- peer0.org2.example.com
+-- -- -- -- -- -- -- msp
+-- -- -- -- -- -- -- -- admincerts
+-- -- -- -- -- -- -- -- cacerts
+-- -- -- -- -- -- -- -- keystore
+-- -- -- -- -- -- -- -- signcerts
+-- -- -- -- -- -- -- -- tlscacerts
+-- -- -- -- -- -- -- tls
+-- -- -- -- -- -- -- -- ca.crt
+-- -- -- -- -- -- -- -- server.crt
+-- -- -- -- -- -- -- -- server.key
+-- -- -- -- -- tlsca
+-- -- -- -- -- users
+-- -- -- -- -- -- Admin@org2.example.com
+-- -- -- -- -- -- -- msp
+-- -- -- -- -- -- -- -- admincerts
+-- -- -- -- -- -- -- -- cacerts
+-- -- -- -- -- -- -- -- keystore
+-- -- -- -- -- -- -- -- signcerts
+-- -- -- -- -- -- -- -- tlscacerts
+-- -- -- -- -- -- -- tls
+-- -- -- -- -- -- -- -- ca.crt
+-- -- -- -- -- -- -- -- client.crt
+-- -- -- -- -- -- -- -- client.key
+-- -- -- -- -- -- User1@org2.example.com
+-- -- -- -- -- -- -- msp
+-- -- -- -- -- -- -- -- admincerts
+-- -- -- -- -- -- -- -- cacerts
+-- -- -- -- -- -- -- -- keystore
+-- -- -- -- -- -- -- -- signcerts
+-- -- -- -- -- -- -- -- tlscacerts
+-- -- -- -- -- -- -- tls
+-- -- -- -- -- -- -- -- ca.crt
+-- -- -- -- -- -- -- -- client.crt
+-- -- -- -- -- -- -- -- client.key
+-- -- -- -- -- connection-org2.json
+-- -- -- -- -- connection-org2.yaml
+
+
+![](img/example_crypto_materials.png)
+
+
+The material is kept in *organizations/*. Here we take Org1 as an example for exploration.
+
+Here are a quick summary for all these components
+- *ca/*: a directory holding crypto material for CA of Org1
+- *peers/*: a directory holding a list of peers under Org1, and each peer has its own crypto material, of both identity and TLS
+- *users/*: a directory holding a list of network users under Org1, and each peer has its own crypto material, of both identity and TLS
+- *tlsca/*: a directory holding the TLS CA
+- *msp/*: it is the material joining a consortium network.
+- *connection-org1.yaml* and *connection-org1.json*: these are the connection profile files in different formats. They will be used in client applications.
+
+#### certificate
+
+Look at the certificate of Admin, both the subject and issuer. We see that the subject contains OU=admin, and the certificate is issued by the CA of Org1.
+![](img/example_ca_Admin.png)
+For User1. There is a difference in the certificate subject. We see OU=client for User1. Obviously it is the difference of roles in these two network users. Admin is an admin, while User1 is a client user. If some actions only allow admin role to perform, User1 is denied.
+![](img/example_ca_Userr1.png)
+
+#### TLS
+In a TLS communication, network components play a TLS server role. Therefore each network component is installed with a TLS server key and server certificate. 
+
+Network user plays a TLS client role. Therefore each network user is installed with a TLS client key and client certificate
+
+![](img/example_tls.png)
+This is a diagram showing the relationship of crypto material generated with *cryptogen*. Note that the Identity CA for each organization is just a CA’s private key and a CA Certificate. There is no software currently running as a CA Server. You will not see a container running in any CA Servers generating this. This certificate issuance process is done by cryptogen software itself. Nevertheless, one can easily bring up a CA Server with CA’s private key and CA Certificate when identity for more entities is needed.
+
+
+
+
+
+
+### 3.2 Generating Crypto Material using *Cryptogen*
+Hyperledger Fabric provides a tool that crypto material can be generated with minimum configuration. The tool is ***bin/cryptogen***.
+
+Working with a configuration file, the crypto material of Test Network is generated and the result is kept as the directory structure shown above. With that, we can bring up the consortium network with docker compose files. 
+
+(Reference: https://kctheservant.medium.com/two-ways-to-generate-crypto-materials-in-hyperledger-fabric-cryptogen-and-ca-server-36d3c3e2daad)
+
+
+
+
+
+
+#### Configuration File
+
+We have seen the result of *cryptogen*. Now we take a look at the configuration files, which tell cryptogen how to generate the crypto material shown above.
+
+The configuration for Test Network is kept inside ***organizations/cryptogen/***. Inside these files we can specify the organization structure of the network (peer organization and orderer organization), and detail of entities within an organization. These configuration files are self-explanatory. For sake of completeness we put them here.
+
+
+
+
+For orderer organization. The result is one orderer with name *orderer.example.com*. ***One Admin user is generated by default***.
+
+
+**```test-network/organizations/cryptogen/crypto-config-orderer.yaml```**:
+![](img/example_cryptogen_orderer_config.png)
+
+
+For peer organization (here we see Org1). The result is one peer (Count 1 in Template) and the name is by default *peer0.org1.example.com*. One ***Admin user is generated by default***. The Count 1 in Users means one additional user is generated as well, with a name User1 by default.
+
+**```test-network/organizations/cryptogen/crypto-config-org1.yaml```**:
+![](img/example_cryptogen_org1_config.png)
+
+
+#### Use of cryptogen
+In the script network.sh, the crypto material is generated in this command.
+cryptogen generate --config=<configuration_file> --output=<output_directory>
+This command is executed for all the three organizations: Org1, Org2 and Orderer Organization.
+We can see how cryptogen works: with this command and configuration files, we can build the directory structure of crypto material shown above.
+
+
+#### Want to modify (add peers)
+
+We then need to change ```test-network/organizations/cryptogen/crypto-config-org1.yaml``` and ```test-network/organizations/cryptogen/crypto-config-org2.yaml``` then run ```./network.sh up``` again.
+
+
+## 4 Modify test network
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 ### 2.4.3 Change the owner of an asset on the ledger by invoking the asset-transfer (basic) chaincode
@@ -869,7 +1098,7 @@ Evaluate Transaction: GetAllAssets, function returns all the current assets on t
  "Size": 15
  }
  ]
-readAssetByID: // 5. read by is 
+readAssetByID: // 5. read by ID 
 Evaluate Transaction: ReadAsset, function returns asset attributes
 *** Result:{
  "AppraisedValue": 1300,
